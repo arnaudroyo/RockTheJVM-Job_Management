@@ -1,34 +1,34 @@
 package com.rockthejvm.jobsboard
 
 import org.http4s.*
-import cats.effect.*
 import org.http4s.dsl.*
 import org.http4s.dsl.impl.*
 import org.http4s.server.*
-import cats.effect.IOApp
-import cats.*
+
+import cats.effect.*
 import cats.effect.IO
+import cats.*
+import cats.implicits.*
 import org.http4s.ember.server.EmberServerBuilder
 
+import com.rockthejvm.jobsboard.config.*
+import com.rockthejvm.jobsboard.config.syntax.*
+import com.rockthejvm.jobsboard.http.routes.HealthRoutes
+import pureconfig.ConfigSource
+import pureconfig.error.ConfigReaderException
 object Application extends IOApp.Simple {
-  def healthEndpoint[F[_]: Monad] : HttpRoutes[F] = {
-    val dsl = Http4sDsl[F]
-    import dsl.*
-    HttpRoutes.of[F] {
-      case GET -> Root / "health" => Ok("All going great ! ")
+
+  //val configSource = ConfigSource.default.load[EmberConfig]
+
+  override def run = ConfigSource.default.loadF[IO, EmberConfig].flatMap { config =>
+         EmberServerBuilder
+           .default[IO]
+           .withHost(config.host)
+           .withPort(config.port)
+           .withHttpApp(HealthRoutes[IO].routes.orNotFound)
+           .build
+           .use(_ => IO.println("Server listening") *> IO.never)
     }
-  }
-
-  def allRoutes[F[_] : Monad]: HttpRoutes[F] = healthEndpoint[F]
-
-  def routerWithPathPrefixes = Router(
-    "/private" -> healthEndpoint[IO]
-  ).orNotFound
-
-  override  def run = EmberServerBuilder
-    .default[IO]
-    .withHttpApp(routerWithPathPrefixes)
-    .build
-    .use(_ => IO.println("Server ready!") *> IO.never)
 }
+
 
