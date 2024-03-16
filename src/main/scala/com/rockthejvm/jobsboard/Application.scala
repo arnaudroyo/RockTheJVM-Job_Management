@@ -7,13 +7,14 @@ import org.http4s.server.*
 
 import cats.effect.*
 import cats.effect.IO
+import cats.effect.IOApp
 import cats.*
 import cats.implicits.*
 import org.http4s.ember.server.EmberServerBuilder
 
 import com.rockthejvm.jobsboard.config.*
 import com.rockthejvm.jobsboard.config.syntax.*
-import com.rockthejvm.jobsboard.http.routes.HealthRoutes
+import com.rockthejvm.jobsboard.http.routes.HttpApi
 import pureconfig.ConfigSource
 import pureconfig.error.ConfigReaderException
 object Application extends IOApp.Simple {
@@ -25,7 +26,7 @@ object Application extends IOApp.Simple {
            .default[IO]
            .withHost(config.host)
            .withPort(config.port)
-           .withHttpApp(HealthRoutes[IO].routes.orNotFound)
+           .withHttpApp(HttpApi[IO].endpoints.orNotFound)
            .build
            .use(_ => IO.println("Server listening") *> IO.never)
     }
