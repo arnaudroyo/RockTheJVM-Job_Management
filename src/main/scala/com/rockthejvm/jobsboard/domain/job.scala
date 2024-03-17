@@ -27,10 +27,10 @@ case class JobInfo(
   other: Option[String]
                   )
 
-object  JobInfo{
-  val empty: JobInfo =
-    JobInfo("", "", "", "", false, "", None, None, None, None, None, None, None, None)
-}
+  object  JobInfo{
+    val empty: JobInfo =
+      JobInfo("", "", "", "", false, "",   None, None, None, None, None, None, None, None)
+  }
 
 }
 
