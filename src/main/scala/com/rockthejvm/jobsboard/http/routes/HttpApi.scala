@@ -1,15 +1,15 @@
 package com.rockthejvm.jobsboard.http.routes
 
-import cats.*
+import cats.effect.*
 import cats.implicits.*
 import org.http4s.*
 import org.http4s.dsl.*
 import org.http4s.dsl.impl.*
 import org.http4s.server.*
-
 import com.rockthejvm.jobsboard.http.routes.*
+import org.typelevel.log4cats.Logger
 
-class HttpApi[F[_]: Monad] private{
+class HttpApi[F[_]: Concurrent: Logger] private{
   private val healthRoutes = HealthRoutes[F].routes
   private val jobRoutes = JobRoutes[F].routes
 
@@ -19,5 +19,5 @@ class HttpApi[F[_]: Monad] private{
 }
 
 object HttpApi {
-  def apply[F[_]: Monad] = new HttpApi[F]
+  def apply[F[_]: Concurrent: Logger] = new HttpApi[F]
 }

@@ -11,6 +11,8 @@ import cats.effect.IOApp
 import cats.*
 import cats.implicits.*
 import org.http4s.ember.server.EmberServerBuilder
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import com.rockthejvm.jobsboard.config.*
 import com.rockthejvm.jobsboard.config.syntax.*
@@ -19,8 +21,7 @@ import pureconfig.ConfigSource
 import pureconfig.error.ConfigReaderException
 object Application extends IOApp.Simple {
 
-  //val configSource = ConfigSource.default.load[EmberConfig]
-
+  given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
   override def run = ConfigSource.default.loadF[IO, EmberConfig].flatMap { config =>
          EmberServerBuilder
            .default[IO]
