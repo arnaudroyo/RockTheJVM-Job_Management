@@ -119,7 +119,7 @@ class LiveJobs[F[_]: MonadCancelThrow] private(xa: Transactor[F]) extends Jobs[F
       .transact(xa)
   override def update(id: UUID, jobInfo: JobInfo): F[Option[Job]]=
     sql"""
-          UPDATE job
+          UPDATE jobs
           SET company = ${jobInfo.company},
                 title = ${jobInfo.title},
                 description = ${jobInfo.description},
