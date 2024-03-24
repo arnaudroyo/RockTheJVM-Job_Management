@@ -1,8 +1,8 @@
 package com.rockthejvm.jobsboard.http.routes
 
 import io.circe.generic.auto.*
-import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
-import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
+import org.http4s.circe.CirceEntityCodec.*
+
 import com.rockthejvm.jobsboard.http.responses.*
 import com.rockthejvm.jobsboard.domain.job.*
 import cats.effect.*
@@ -58,9 +58,11 @@ class JobRoutes[F[_] : Concurrent: Logger] (jobs: Jobs[F]) extends Http4sDsl[F] 
   private val updateJobRoute: HttpRoutes[F] =
   HttpRoutes.of[F] {
     case req @ PUT -> Root / UUIDVar(id) =>
-        for {
-          jobInfo <- req.as[JobInfo]
-          maybeNewjob <- jobs.update(id, jobInfo).pure[F]
+      for {
+          _ <- Logger[F].info(s"Trying to update job $id") //log classique
+          jobInfo <- req.as[JobInfo].logError(e => s"parsing payload failed: $e") // log spécifique
+          maybeNewjob <- jobs.update(id, jobInfo)
+          _ <- Logger[F].info(s"Job update passed newtitle= ${maybeNewjob}") //log classique
           resp <- maybeNewjob match {
             case Some(job) => Ok()
             case None => NotFound(FailureResponse(s"Cannot update job $id not found."))
@@ -75,8 +77,10 @@ class JobRoutes[F[_] : Concurrent: Logger] (jobs: Jobs[F]) extends Http4sDsl[F] 
       jobs.find(id).flatMap {
         case Some(job) =>
           for {
+            _ <- Logger[F].info(s"Trying to delete job $id..") //log classique
             _ <- jobs.delete(id).pure[F]
-            resp <- Ok()
+            resp <- Ok(s"Deleted job $id")
+            _ <- Logger[F].info(s"Deleted job $id..")
           }yield resp
 
         case None => NotFound(FailureResponse(s"Cannot delete job $id not found."))

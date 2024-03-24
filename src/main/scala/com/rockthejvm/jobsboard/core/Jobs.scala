@@ -126,7 +126,7 @@ class LiveJobs[F[_]: MonadCancelThrow] private(xa: Transactor[F]) extends Jobs[F
                 externalUrl = ${jobInfo.externalUrl},
                 remote = ${jobInfo.remote},
                 location = ${jobInfo.location},
-                salaryLo = ${jobInfo.salaryLo},
+                salaryLo  = ${jobInfo.salaryLo},
                 salaryHi = ${jobInfo.salaryHi},
                 currency = ${jobInfo.currency},
                 country = ${jobInfo.country},
@@ -134,7 +134,7 @@ class LiveJobs[F[_]: MonadCancelThrow] private(xa: Transactor[F]) extends Jobs[F
                 image = ${jobInfo.image},
                 seniority = ${jobInfo.seniority},
                 other = ${jobInfo.other}
-                WHERE id = $id
+                WHERE id = ${id}
     """
       .update
       .run

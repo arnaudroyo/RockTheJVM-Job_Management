@@ -34,20 +34,17 @@ object jobsPlayground extends IOApp .Simple {
   override def run: IO[Unit] = postgresResource.use { xa =>
     for{
       jobs <- LiveJobs[IO](xa)
-      _ <- IO(println("Ready. Next...")) *> IO(StdIn.readLine)
+      _ <- IO(println("Ready. Create ?")) *> IO(StdIn.readLine)
       id <- jobs.create("azerty@a.com", jobInfo)
-      _ <- IO(println("Ready. Next...")) *> IO(StdIn.readLine)
+      _ <- IO(println("Ready. list ?")) *> IO(StdIn.readLine)
       list <- jobs.all()
-      _ <- IO(println(s"All jobs : $list Next...")) *> IO(StdIn.readLine)
+      _ <- IO(println(s"All jobs : $list Update ?")) *> IO(StdIn.readLine)
       _ <- jobs.update(id, jobInfo.copy(title = "Software Rockstar"))
       newJob <- jobs.find(id)
-      _ <- IO(println(s"New job: $newJob Next...")) *> IO(StdIn.readLine)
+      _ <- IO(println(s"New job: $newJob Delete ?")) *> IO(StdIn.readLine)
       _ <- jobs.delete(id)
       listAfter = jobs.all()
-      _ <- IO(println(s"Deleted job, New list: $listAfter Next...")) *> IO(StdIn.readLine)
-
+      _ <- IO(println(s"Deleted job, New list: $listAfter Over.")) *> IO(StdIn.readLine)
     }yield {}
-
   }
-
 }
