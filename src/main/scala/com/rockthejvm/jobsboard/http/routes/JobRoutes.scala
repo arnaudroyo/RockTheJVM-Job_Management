@@ -15,10 +15,12 @@ import org.http4s.server.*
 import org.typelevel.log4cats.Logger
 import com.rockthejvm.jobsboard.logging.syntax.* //log specifique créé
 
+import com.rockthejvm.jobsboard.http.validation.syntax.*
+
 
 import java.util.UUID
 import scala.collection.mutable
-class JobRoutes[F[_] : Concurrent: Logger] (jobs: Jobs[F]) extends Http4sDsl[F] {
+class JobRoutes[F[_] : Concurrent: Logger] (jobs: Jobs[F]) extends HttpValidationDsl[F]{
 
   // POST /jobs?offset=x&limit=y { filters } //TODO add query parmas and filters
   private val allJobRoutes: HttpRoutes[F] = HttpRoutes.of[F] {
@@ -40,34 +42,34 @@ class JobRoutes[F[_] : Concurrent: Logger] (jobs: Jobs[F]) extends Http4sDsl[F] 
   }
 
   //POST /jobs {jobInfo}
-
-
   private val createJobRoute: HttpRoutes[F] =
-  HttpRoutes.of[F] { case req @ POST -> Root / "create" =>
-    for {
-      _ <- Logger[F].info("Trying to add job..") //log classique
-      jobInfo <- req.as[JobInfo].logError(e => s"parsing payload failed: $e") // log spécifique
-      _ <- Logger[F].info(s"Parse job info: $jobInfo")
-      jobId <-  jobs.create("TODO@gmail.com",jobInfo)
-      _ <- Logger[F].info(s"Created job: $jobId")
-      resp <- Created(jobId)
-    }yield resp
+  HttpRoutes.of[F] { case req@POST -> Root / "create" =>
+    req.validate[JobInfo] { jobInfo =>
+      for {
+        _ <- Logger[F].info("Trying to add job..") //log classique
+        jobId <- jobs.create("TODO@gmail.com", jobInfo)
+        _ <- Logger[F].info(s"Pass creation of job: $jobId")
+        resp <- Created(jobId)
+      } yield resp
+    }
   }
 
   //PUT /jobs/uuid {jobInfo}
   private val updateJobRoute: HttpRoutes[F] =
   HttpRoutes.of[F] {
     case req @ PUT -> Root / UUIDVar(id) =>
-      for {
+      req.validate[JobInfo] { jobInfo =>
+        for {
           _ <- Logger[F].info(s"Trying to update job $id") //log classique
-          jobInfo <- req.as[JobInfo].logError(e => s"parsing payload failed: $e") // log spécifique
           maybeNewjob <- jobs.update(id, jobInfo)
           _ <- Logger[F].info(s"Job update passed newtitle= ${maybeNewjob}") //log classique
           resp <- maybeNewjob match {
             case Some(job) => Ok()
             case None => NotFound(FailureResponse(s"Cannot update job $id not found."))
           }
-        }yield resp
+        } yield resp
+      }
+
   }
 
   //DELETE /jobs/uuid {jobInfo}
