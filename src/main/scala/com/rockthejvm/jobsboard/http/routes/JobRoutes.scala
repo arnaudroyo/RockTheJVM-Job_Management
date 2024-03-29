@@ -5,6 +5,7 @@ import org.http4s.circe.CirceEntityCodec.*
 
 import com.rockthejvm.jobsboard.http.responses.*
 import com.rockthejvm.jobsboard.domain.job.*
+import com.rockthejvm.jobsboard.domain.pagination.*
 import cats.effect.*
 import cats.implicits.*
 import com.rockthejvm.jobsboard.core.Jobs
@@ -22,11 +23,15 @@ import java.util.UUID
 import scala.collection.mutable
 class JobRoutes[F[_] : Concurrent: Logger] (jobs: Jobs[F]) extends HttpValidationDsl[F]{
 
-  // POST /jobs?offset=x&limit=y { filters } //TODO add query parmas and filters
+  object LimitQueryParam extends OptionalQueryParamDecoderMatcher[Int]("limit")
+  object OffsetQueryParam extends OptionalQueryParamDecoderMatcher[Int]("offset")
+
+  // POST /jobs?limit=x&offset=y { filters }
   private val allJobRoutes: HttpRoutes[F] = HttpRoutes.of[F] {
-      case POST -> Root  =>
+      case req @ POST -> Root :? LimitQueryParam(limit) +& OffsetQueryParam(offset) =>
         for{
-          jobsList <- jobs.all()
+          filter <- req.as[JobFilter]
+          jobsList <- jobs.all(filter, Pagination(limit, offset))
           resp <- Ok(jobsList)
         }yield resp
 
