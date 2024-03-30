@@ -136,7 +136,7 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private(xa: Transactor[F]) extend
     )
 
     val paginationFragment : Fragment =
-      fr"ORDER BY id LIMIT ${pagination.limit} OFFSEET ${pagination.offset}"
+      fr"ORDER BY id LIMIT ${pagination.limit} OFFSET ${pagination.offset}"
 
     val statement = selectFragment |+| fromFragment |+| whereFragment |+| paginationFragment
 

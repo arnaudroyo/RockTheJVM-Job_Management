@@ -1,13 +1,16 @@
 package com.rockthejvm.jobsboard.core
 
 import cats.effect.*
-import cats.effect.testing.scalatest.AsyncIOSpec
-import com.rockthejvm.jobsboard.fixtures.*
-import org.scalatest.freespec.AsyncFreeSpec
-import org.scalatest.matchers.should.Matchers
-import doobie.util.*
 import doobie.postgres.implicits.*
 import doobie.implicits.*
+import cats.effect.testing.scalatest.AsyncIOSpec
+import com.rockthejvm.jobsboard.domain.job.*
+import com.rockthejvm.jobsboard.domain.pagination.*
+import org.scalatest.freespec.AsyncFreeSpec
+import org.scalatest.matchers.should.Matchers
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+import com.rockthejvm.jobsboard.fixtures.*
 class JobsSpec
   extends AsyncFreeSpec
   with AsyncIOSpec
@@ -16,6 +19,9 @@ class JobsSpec
   with JobFixture {
 
   val initScript: String = "sql/jobs.sql"
+
+  given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
+
 
   "Jobs 'algebra'" - {
     "should return no job if the uuid soes not exist" in {
@@ -111,6 +117,28 @@ class JobsSpec
         } yield nbOfDeletedJob
 
         program.asserting(_ shouldBe 0)
+      }
+    }
+
+    "should filter remote job" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs <- LiveJobs[IO](xa)
+          filteredJob <- jobs.all(JobFilter(remote = true), Pagination.default)
+        } yield filteredJob
+
+        program.asserting(_ shouldBe List())
+      }
+    }
+
+    "should filter jobs by tags" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs <- LiveJobs[IO](xa)
+          filteredJob <- jobs.all(JobFilter(tags = List("scala", "cats", "zio")), Pagination.default)
+        } yield filteredJob
+
+        program.asserting(_ shouldBe List(AwesomeJob))
       }
     }
 

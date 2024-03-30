@@ -20,6 +20,7 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import com.rockthejvm.jobsboard.fixtures.*
 import com.rockthejvm.jobsboard.core.*
 import com.rockthejvm.jobsboard.domain.job.*
+import com.rockthejvm.jobsboard.domain.pagination.*
 
 import java.util.UUID
 
@@ -34,25 +35,29 @@ class JobRoutesSpec
   /// prep
   /////////////////////////////////////////////////////////////////
   val jobs: Jobs[IO] = new Jobs[IO] {
-    def create(ownerEmail: String, jobInfo: JobInfo): IO[UUID] =
+    override def create(ownerEmail: String, jobInfo: JobInfo): IO[UUID] =
       IO.pure(NewJobUuid)
 
-    def all(): IO[List[Job]] =
+    override def all(): IO[List[Job]] =
       IO.pure(List(AwesomeJob))
 
-    def find(id: UUID): IO[Option[Job]] =
+    override def all(filter: JobFilter, pagination: Pagination): IO[List[Job]] =
+      if(filter.remote) IO.pure(List())
+      else IO.pure(List(AwesomeJob))
+
+    override def find(id: UUID): IO[Option[Job]] =
       if (id == AwesomeJobUuid)
         IO.pure(Some(AwesomeJob))
       else
         IO.pure(None)
 
-    def update(id: UUID, jobInfo: JobInfo): IO[Option[Job]] =
+    override def update(id: UUID, jobInfo: JobInfo): IO[Option[Job]] =
       if(id == AwesomeJobUuid)
         IO.pure(Some(UpdatedAwesomeJob))
       else
         IO.pure(None)
 
-    def delete(id: UUID): IO[Int] =
+    override def delete(id: UUID): IO[Int] =
       if(id == AwesomeJobUuid)
         IO.pure(1)
       else
@@ -91,6 +96,7 @@ class JobRoutesSpec
         //simulate http request
         response <- jobRoutes.orNotFound.run {
           Request(method = Method.POST, uri = uri"/jobs")
+            .withEntity(JobFilter()) //empty filter
         }
         //get an http response
         retrieved <- response.as[List[Job]]
@@ -98,6 +104,23 @@ class JobRoutesSpec
         //make some assertions
         response.status shouldBe Status.Ok
         retrieved shouldBe List(AwesomeJob)
+      }
+    }
+
+    "should return all the jobs that satisfy a filter" in {
+      //code under test
+      for {
+        //simulate http request
+        response <- jobRoutes.orNotFound.run {
+          Request(method = Method.POST, uri = uri"/jobs")
+            .withEntity(JobFilter(remote = true)) //empty filter
+        }
+        //get an http response
+        retrieved <- response.as[List[Job]]
+      } yield {
+        //make some assertions
+        response.status shouldBe Status.Ok
+        retrieved shouldBe List()
       }
     }
 
