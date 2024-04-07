@@ -24,3 +24,15 @@ id uuid DEFAULT gen_random_uuid(),
 
 ALTER TABLE jobs
 ADD CONSTRAINT pk_jobs PRIMARY KEY (id)
+
+CREATE TABLE users (
+    email text NOT NULL,
+    hashedPassword text  NOT NULL,
+    firstName text,
+    lastName text,
+    company text,
+    role text  NOT NULL
+);
+
+alter table users
+add constraint pk_users PRIMARY KEY (email);
